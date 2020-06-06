@@ -23,19 +23,19 @@ curl https://raw.githubusercontent.com/iotexproject/iotex-core/master/install-cl
 
 - Get the height of Ethereum mainnet that election service has sycned up to:
 ```
-➜  grpcurl -v -plaintext 35.203.165.104:8089 ranking.Ranking.getMeta
+➜  grpcurl -v -plaintext 35.203.165.104:8089 api.APIService.getMeta
 Response contents:
 {
-  "height": "7356100",
-  "totalCandidates": 25,
-  "totalVotedStakes": "44565800000000000000000000",
-  "totalVotes": "47935907533979720135774633"
+  "height": "8128200",
+  "totalCandidates": 2,
+  "totalVotedStakes": "22535256000000000000000000",
+  "totalVotes": "26699190643280406696696617"
 }
 ```
 
 - Use height from the obtained response, and check the current ranking status
 ```
-➜  grpcurl -v -plaintext -d '{"height": "7356100", "offset": 0, "limit": 100}' 35.203.165.104:8089 ranking.Ranking.getCandidates
+➜  grpcurl -v -plaintext -d '{"height": "7356100", "offset": 0, "limit": 100}' 35.203.165.104:8089 api.APIService.getCandidates
 Response contents:
 {
   "candidates": [

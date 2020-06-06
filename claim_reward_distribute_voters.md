@@ -6,7 +6,7 @@ This doc will guide you how to claim rewards and distribute to your voters. Here
 
 # Prerequisite
 
-Before moving onto any of the following sections, please install our `ioctl` and `bookkeeper` commandline tool
+Before moving onto any of the following sections, please install our `ioctl` commandline tool
 
 ## Install ioctl Tool
 
@@ -44,14 +44,6 @@ For example, you can use the following command to check the balance of your acco
 
 You will find your balance in IOTX in the output.
 
-## Install bookkeeper Tool
-
-`bookkeeper` is a reward distribution tool provided by __IoTeX Foundation__ to assist calculation of reward tokens for voters. To install, run the following command in terminal:
-
-```curl -Ss https://raw.githubusercontent.com/iotexproject/iotex-core/master/install-bookkeeper.sh | sh```
-
-Download [the config yaml](https://github.com/iotexproject/iotex-tools/blob/master/bookkeeper/committee.yaml) for our mainnet to the directory you want to store the csv files exported by the `bookkeeper` tool.
-
 ---
 
 # Claim Rewards
@@ -82,59 +74,43 @@ If your claim is successful, you will notice an increase of the balance in your 
 
 # Swap to Ethereum ERC20 Token
 
-We provide a service to swap the IoTeX mainnet coin to the [IoTeX Network ERC20 token](https://etherscan.io/token/0x6fb3e0a217407efff7ca062d46c26e5d60a14d69) via a lock contract **io1pcg2ja9krrhujpazswgz77ss46xgt88afqlk6y**.
-
-## Swap IOTX Coin to the Lock Contract
-
-To invoke with the lock contract, run the following command in terminal:
-
-```ioctl action invoke io1pcg2ja9krrhujpazswgz77ss46xgt88afqlk6y ${amount} -s ${io_address|account_name} -l 400000 -p 1 -b d0e30db0```
-
-The `amount` in the command should be equal to the amount you want to swap plus a fee (20 IOTX). For example, if you want to swap 30000 IOTX from you account `my_primary_account`, you can input:
-
-```ioctl action invoke io1pcg2ja9krrhujpazswgz77ss46xgt88afqlk6y 30020 -s my_primary_account -l 400000 -p 1 -b d0e30db0```
-
-You will be prompted to enter password, then enter `yes` to confirm.
-
-> Note: The lock contract has imposed a minimum amount of 1020 and maximum 1,000,020 IOTX. Amount not in this range will automatically be rejected. The contract will charge 20 tokens as gas fee for each swap, so the minimum/maximum range is to help user make swap in an economical way.
-
-Due to this reason, do not transfer the total balance in the IoTeX address, that will be rejected (because that won't leave enough balance to cover the gas fee). We suggest leave about ~100 tokens in the IoTeX address so you will have enough balance to cover gas fee and use it next time.
-
-Please keep the transaction hash of your transfer for future reference, especially in the rare case that the ERC20 token transfer failed and you request for a re-issue.
-
-## Check Received ERC20 Token
-Each IoTeX address is by itself associated with an ETH address, which shares the same private key.
-
-Use the iotcl command line tool to get the ETH address associated with your IoTeX address, run the following command in terminal:
-
-```ioctl account ethaddr ${io_address|account_name}```
-
-For example, to get the ETH address of your account `my_primary_account`:
-
-```ioctl account ethaddr my_primary_account```
-
-You will find your IoTeX address and the corresponding ETH address in the output. Then you can check address the ETH address on https://etherscan.io to verify the IoTeX Network ERC20 tokens you have received.
+We provide a service to swap the IoTeX mainnet coin to the [IoTeX Network ERC20 token](https://etherscan.io/token/0x6fb3e0a217407efff7ca062d46c26e5d60a14d69) via a lock contract **io1p99pprm79rftj4r6kenfjcp8jkp6zc6mytuah5**.
+```
+ioctl action invoke io1p99pprm79rftj4r6kenfjcp8jkp6zc6mytuah5 ${amountInIOTX} -s ${ioAddress|alias} -l 400000 -p 1 -b d0e30db0
+```
+We recommend that you use our [web portal](https://member.iotex.io/tools/iotex) to do the swap. Click [IoTeX Tube docs](https://github.com/iotexproject/iotex-bootstrap/blob/master/tube/tube.md) for detailed documentation of the tube service.
 
 ---
 
 # Distribution to Voters
 
-To distribute rewards to your voters, you need to first export the distribution with `bookkeeper`, and then send out tokens with some multi-send tool or send them one by one.
+To distribute rewards to your voters, you need to first export the distribution with `bookkeeping`, and then send out tokens with some multi-send tool or send them one by one.
 
-## Export Distribution with `bookkeeper`
-You can use the bookkeeper tool to calculate voters' rewards. The usage is:
+## Export Distribution with `bookkeeping` GraphQL web interface
+You can use our GraphQL interface tool to get the reward distributions. The usage is:
 
-`bookkeeper --bp BP_NAME --start START_EPOCH_NUM --to END_EPOCH_NUM --percentage PERCENTAGE [--with-foundation-bonus] [--endpoint IOTEX_ENDPOINT] [--CONFIG CONFIG_FILE]`
+```
+query {
+  delegate(startEpoch: START_EPOCH_NUMBER, epochCount: EPOCH_COUNT, delegateName: DELEGATE_NAME){
+    bookkeeping(percentage: PERCENTAGE_OF_DISTRIBUTION, includeFoundationBonus: WHETHER_DISTRIBUTE_FOUNDATION_BONUS){
+      exist
+      rewardDistribution(pagination: {skip: START_INDEX_OF_DISPLAYING_REWARD_DISTRIBUTION_LIST, first: NUMBER_OF_REWARD_DISTRIBUTIONS_TO_DISPLAY}){
+        voterEthAddress
+        voterIotexAddress
+        amount
+      }
+      count
+    }
+  }
+}
+```
 
-For example, delegate `xyz` wants to distribute `90%` of its reward from epoch `24` to epoch `48`. To distribute Epoch Reward only:
+Note that you can add the optional return field **exist** as above to check wether the delegate has bookkeeping information within the specified epoch range. Specifying the optional argument **pagination** would only show you part of the reward distribution list while the optional return field **count** would tell the total number of reward distributions. If you don't specify **pagination** argument, by default you will get the complete reward distribution list sorted by voter's ETH address.
 
-```bookkeeper --bp xyz --start 24 --to 48 --percentage 90```
+Once you specify all the arguments and return information, click the PLAY button, and you will see the reward information on the right.
+<img width="1517" alt="Screen Shot 2019-06-16 at 4 52 48 PM" src="https://user-images.githubusercontent.com/15241597/59571278-07915e80-9058-11e9-8f8f-ee238a822164.png">
 
-To distribute Foundation Bonus in addition to Epoch Reward:
-
-```bookkeeper --bp xyz --start 24 --to 48 --percentage 90 --with-foundation-bonus```
-
-The result will be saved to file `epoch_24_to_48.csv`, with the first column as the voter address, and the second column as the reward in Rau the corresponding voter will get. This csv file will be used in the next step MultiSend tool where the rewards are actually distributed to your voters.
+You can find the GraphQL web tool [here](https://analytics.iotexscan.io/).
 
 ## Send ERC20 Tokens to Voters
 
@@ -142,7 +118,7 @@ To send tokens to your voters, you may choose one of the following tools
 
 ### IoTeX MultiSend Tool
 
-[multi-send](https://member.iotex.io/multi-send) is a tool developed by __IoTeX Foundation__ to send IOTX tokens on Ethereum to multi accounts. To use this tool, you need to sign into Metamask. After that, paste the csv file from the above step into "Recipients and Amounts". After clicking the button "Distribute ERC-20 IOTX", follow instructions from Metamask to finish sending tokens.
+[multi-send](https://member.iotex.io/tools/multi-send) is a tool developed by __IoTeX Foundation__ to send IOTX tokens on Ethereum to multi accounts. To use this tool, you need to sign into Metamask. After that, paste the csv file from the above step into "Recipients and Amounts". After clicking the button "Distribute ERC-20 IOTX", follow instructions from Metamask to finish sending tokens.
 
 > Note: A fee in ETH will be charged automatically.
 
